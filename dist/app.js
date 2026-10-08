@@ -5,6 +5,30 @@ import { initCopyDemo } from './copy-demo.js';
 const $ = selector => document.querySelector(selector);
 document.querySelectorAll('[data-version]').forEach(el => { el.textContent = `v${product.version}`; });
 void loadReleaseMetadata();
+
+// A light deterrent, not source protection: browser menus can still open DevTools.
+console.log('%cSai daqui, ô curioso! Sai, ô metido a hacker. 😄', 'background: #1559C7; color: #ECE9D8; padding: 8px 12px; font: bold 14px Tahoma, sans-serif;');
+const isEditable = target => target instanceof Element && target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
+let pointerContextMenu = false;
+document.addEventListener('pointerdown', event => {
+  pointerContextMenu = event.button === 2 || (event.button === 0 && event.ctrlKey);
+}, { capture: true });
+document.addEventListener('keydown', event => {
+  pointerContextMenu = false;
+  if (isEditable(event.target)) return;
+  const key = event.key.toLowerCase();
+  const inspectShortcut = ['i', 'j', 'c', 'k'].includes(key) && ((event.ctrlKey && event.shiftKey) || (event.metaKey && event.altKey));
+  const sourceShortcut = key === 'u' && ((event.ctrlKey && !event.shiftKey && !event.altKey) || (event.metaKey && event.altKey));
+  if (key === 'f12' || inspectShortcut || sourceShortcut) event.preventDefault();
+}, { capture: true });
+document.addEventListener('contextmenu', event => {
+  const fromPointer = pointerContextMenu;
+  pointerContextMenu = false;
+  if (!fromPointer || isEditable(event.target) || window.getSelection()?.toString()) return;
+  if (event.target instanceof Element && event.target.closest('a, button')) return;
+  event.preventDefault();
+});
+
 const menuToggle = $('.menu-toggle');
 const mobileNav = $('#mobile-nav');
 menuToggle.addEventListener('click', () => {

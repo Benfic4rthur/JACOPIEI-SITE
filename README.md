@@ -35,6 +35,8 @@ Somente depois dessa nova comparação o resumo é atualizado para 50/50 (ou 49/
 
 Nenhuma comparação, gravação, transferência, exclusão, abertura de Finder ou seleção de arquivo real acontece no navegador. Todas as informações e operações da demonstração são fictícias.
 
+O console mostra uma mensagem bem-humorada uma vez ao carregar a página. Há uma barreira leve aos atalhos de inspeção e ao menu de contexto por mouse em áreas estáticas. Campos editáveis, links, botões, seleção de texto e menu de contexto por teclado permanecem disponíveis. Isso não protege o código-fonte nem impede abrir DevTools pelo menu do navegador.
+
 ## Conteúdo e limites
 
 Recursos e FAQ descrevem comparação SHA-256, arquivos/pastas/arrastar e soltar no app, múltiplos destinos, filtros e busca, detalhes/Finder, progresso, seleções lembradas, CSV, cópia em lote, revisão, organização, conflitos de nomes, conferência após gravação, cancelamento, histórico e nova comparação. Os históricos guardam até 20 verificações e 20 operações de cópia, sujeito ao armazenamento local.
