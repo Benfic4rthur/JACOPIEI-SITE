@@ -1,9 +1,10 @@
 import { product } from './config.js';
-import { loadReleaseMetadata } from './release.js';
+import { loadReleaseMetadata, loadReleaseDownloads } from './release.js';
 import { initCopyDemo } from './copy-demo.js';
 
 const $ = selector => document.querySelector(selector);
 void loadReleaseMetadata();
+void loadReleaseDownloads();
 
 // A light deterrent, not source protection: browser menus can still open DevTools.
 console.log('%cSai daqui, ô curioso! Sai, ô metido a hacker. 😄', 'background: #1559C7; color: #ECE9D8; padding: 8px 12px; font: bold 14px Tahoma, sans-serif;');

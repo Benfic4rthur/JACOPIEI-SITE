@@ -3,13 +3,21 @@ import AxeBuilder from '@axe-core/playwright';
 
 const metadataUrl = 'https://raw.githubusercontent.com/Benfic4rthur/JaCopiei-Releases/main/latest.json';
 const releases = 'https://github.com/Benfic4rthur/JaCopiei-Releases/releases';
+const releaseApi = /https:\/\/api\.github\.com\/repos\/Benfic4rthur\/JaCopiei-Releases\/releases\?/;
 const metadata = {
   version: '7.8.9', build: '6', minimumMacOSVersion: '14.0', architectures: ['arm64', 'x86_64'],
   downloadUrl: `${releases}/download/v7.8.9/JaCopiei-7.8.9-universal.dmg`, releaseNotesUrl: `${releases}/tag/v7.8.9`,
   sha256: '108c618ed963449d17f9e8ff3fc86a243119af6dae11810f10ac402a9d72ce77', sizeBytes: 2973805,
   channel: 'preview', codeSigning: 'ad-hoc-not-notarized', automaticUpdatesAvailable: false,
 };
-test.beforeEach(async ({ page }) => { await page.route(metadataUrl, route => route.fulfill({ json: metadata })); });
+test.beforeEach(async ({ page }) => {
+  await page.route(metadataUrl, route => route.fulfill({ json: metadata }));
+  await page.route(releaseApi, route => route.fulfill({ json: [
+    { draft: false, assets: [{ name: 'JaCopiei-0.5.2.dmg', download_count: 0 }, { name: 'JaCopiei-0.5.2.zip', download_count: 100 }] },
+    { draft: false, assets: [{ name: 'JaCopiei-0.4.0.dmg', download_count: 3 }] },
+    { draft: false, assets: [{ name: 'JaCopiei-0.3.0.dmg', download_count: 4 }] },
+  ] }));
+});
 async function openDemo(page) {
   await page.locator('.hero-actions [data-open-demo]').click();
   await expect(page.locator('#demo-dialog')).toBeVisible();
@@ -134,6 +142,29 @@ test('metadados oficiais configuram DMG, versão, compatibilidade e aviso', asyn
   await expect(page.locator('#hero-download-warning')).toContainText('sem notarização da Apple');
   await expect(page.locator('#download-warning')).toContainText('Atualização automática desativada');
   await expect(page.locator('[data-metadata-status]')).toHaveText('v7.8.9 · DMG 3 MB');
+  await expect(page.locator('[data-download-total]')).toHaveText('Downloads acumulados: 7');
+});
+
+test('downloads acumulados incluem todas as páginas, mas só instaladores DMG', async ({ page }) => {
+  await page.unroute(releaseApi);
+  await page.route(releaseApi, route => {
+    const pageNumber = new URL(route.request().url()).searchParams.get('page');
+    const json = pageNumber === '1'
+      ? Array.from({ length: 100 }, () => ({ draft: false, assets: [{ name: 'JaCopiei.dmg', download_count: 1 }, { name: 'JaCopiei.zip', download_count: 999 }] }))
+      : [{ draft: false, assets: [{ name: 'JaCopiei-old.DMG', download_count: 23 }] }, { draft: true, assets: [{ name: 'draft.dmg', download_count: 77 }] }];
+    return route.fulfill({ json });
+  });
+  await page.goto('/');
+  await expect(page.locator('[data-download-total]')).toHaveText('Downloads acumulados: 123');
+  await expect(page.locator('[data-download-cta]').first()).toHaveAttribute('href', metadata.downloadUrl);
+});
+
+test('falha na contagem não impede baixar o instalador', async ({ page }) => {
+  await page.unroute(releaseApi);
+  await page.route(releaseApi, route => route.abort());
+  await page.goto('/');
+  await expect(page.locator('[data-download-total]')).toHaveText('Downloads acumulados indisponíveis no momento.');
+  await expect(page.locator('[data-download-cta]').first()).toHaveAttribute('href', metadata.downloadUrl);
 });
 
 for (const mode of ['network', 'invalid', 'source-archive', 'foreign-repository']) {

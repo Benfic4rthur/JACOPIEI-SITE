@@ -1,5 +1,43 @@
 import { product } from './config.js';
 
+// Count only the DMG installers. ZIPs, blockmaps and metadata are extra assets
+// for the same release, so adding them would inflate the public download total.
+export async function fetchAllReleaseDownloads(signal) {
+  let total = 0;
+  for (let page = 1; ; page += 1) {
+    const response = await fetch(`${product.release.apiUrl}?per_page=100&page=${page}`, { signal });
+    if (!response.ok) throw new Error('Release history unavailable');
+    const releases = await response.json();
+    if (!Array.isArray(releases)) throw new Error('Invalid release history');
+    for (const release of releases) {
+      if (!release || release.draft || !Array.isArray(release.assets)) continue;
+      for (const asset of release.assets) {
+        if (!asset || typeof asset.name !== 'string' || !/\.dmg$/i.test(asset.name)) continue;
+        if (!Number.isSafeInteger(asset.download_count) || asset.download_count < 0) throw new Error('Invalid download count');
+        total += asset.download_count;
+      }
+    }
+    if (releases.length < 100) return total;
+  }
+}
+
+export async function loadReleaseDownloads() {
+  const status = document.querySelector('[data-download-total]');
+  if (!status) return;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+  try {
+    const total = await fetchAllReleaseDownloads(controller.signal);
+    status.textContent = `Downloads acumulados: ${total.toLocaleString('pt-BR')}`;
+    status.title = 'Instaladores DMG de todas as releases publicadas no GitHub';
+  } catch {
+    status.textContent = 'Downloads acumulados indisponíveis no momento.';
+    status.removeAttribute('title');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // A failed/invalid manifest always leads to the real releases page, never a source archive.
 export function validateRelease(data) {
   if (!data || !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(data.version)) throw new Error('Invalid release version');

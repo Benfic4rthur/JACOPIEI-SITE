@@ -5,6 +5,7 @@ export const product = Object.freeze({
   licensingApiUrl: 'https://jacopiei-license-server.vercel.app',
   release: {
     metadataUrl: 'https://raw.githubusercontent.com/Benfic4rthur/JaCopiei-Releases/main/latest.json',
+    apiUrl: 'https://api.github.com/repos/Benfic4rthur/JaCopiei-Releases/releases',
     releasesUrl: 'https://github.com/Benfic4rthur/JaCopiei-Releases/releases',
     repositoryUrl: 'https://github.com/Benfic4rthur/JaCopiei-Releases',
   },
