@@ -1,75 +1,63 @@
 import { product } from './config.js';
+import { loadReleaseMetadata } from './release.js';
 import { initCopyDemo } from './copy-demo.js';
+
+const $ = selector => document.querySelector(selector);
 document.querySelectorAll('[data-version]').forEach(el => { el.textContent = `v${product.version}`; });
-const menuToggle = document.querySelector('.menu-toggle');
-const mobileNav = document.querySelector('#mobile-nav');
+void loadReleaseMetadata();
+const menuToggle = $('.menu-toggle');
+const mobileNav = $('#mobile-nav');
 menuToggle.addEventListener('click', () => {
   const open = menuToggle.getAttribute('aria-expanded') !== 'true';
   menuToggle.setAttribute('aria-expanded', String(open));
   menuToggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
   mobileNav.hidden = !open;
 });
-mobileNav.addEventListener('click', e => {
-  if (e.target.closest('a')) { mobileNav.hidden = true; menuToggle.setAttribute('aria-expanded', 'false'); menuToggle.setAttribute('aria-label', 'Abrir menu'); }
+mobileNav.addEventListener('click', event => {
+  if (event.target.closest('a')) { mobileNav.hidden = true; menuToggle.setAttribute('aria-expanded', 'false'); menuToggle.setAttribute('aria-label', 'Abrir menu'); }
 });
-
-// Only a real HTTPS installer URL AND public availability activate downloads.
-function safeHttps(value) {
-  try { const url = new URL(value); return url.protocol === 'https:' ? url.href : null; } catch { return null; }
-}
-const download = product.publicAvailable && safeHttps(product.downloadUrl);
 const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: product.price.currency }).format(product.price.amount);
 document.querySelectorAll('[data-price]').forEach(el => { el.textContent = price; });
-if (download) {
-  document.querySelectorAll('[data-primary-cta]').forEach(el => { el.textContent = 'Baixar para macOS'; el.href = download; });
-  document.querySelectorAll('[data-launch-status]').forEach(el => { el.textContent = 'Disponível para macOS'; });
-}
-const subscriptionNote = product.subscriptionAvailable
-  ? 'Baixe o app e assine pelo próprio JáCopiei?'
-  : 'A assinatura será realizada dentro do aplicativo quando disponível.';
-document.querySelector('[data-subscription-note]').textContent = subscriptionNote;
-document.querySelector('[data-price-note]').textContent = product.subscriptionAvailable ? 'Assinatura mensal pelo aplicativo.' : 'Preço previsto para o lançamento.';
-document.querySelector('[data-faq-subscription]').textContent = `${subscriptionNote} ${product.subscriptionAvailable ? 'O valor é' : 'O preço previsto para o lançamento é'} ${price} por ${product.price.interval}. Este site não coleta pagamentos nem dados de cartão.`;
+$('[data-faq-subscription]').textContent = `${price} por ${product.price.interval} é o preço planejado, não uma assinatura disponível hoje. Pagamentos, ativação, liberação de licenças e compra dentro do aplicativo ainda não estão disponíveis. A intenção futura é vender pelo app; o site apresenta o produto e distribui o instalador.`;
+function safeHttps(value) { try { const url = new URL(value); return url.protocol === 'https:' ? url.href : null; } catch { return null; } }
 for (const [key, label] of Object.entries({ product: 'Informações do produto', privacy: 'Política de privacidade', terms: 'Termos de uso' })) {
   const href = safeHttps(product.links[key]);
-  if (href) { const link = document.createElement('a'); link.href = href; link.textContent = label; document.querySelector('.footer-links').append(link); }
+  if (href) { const link = document.createElement('a'); link.href = href; link.textContent = label; $('.footer-links').append(link); }
 }
 if (product.contact && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(product.contact)) {
-  const link = document.createElement('a'); link.href = `mailto:${product.contact}`; link.textContent = 'Contato'; document.querySelector('.footer-links').append(link);
+  const link = document.createElement('a'); link.href = `mailto:${product.contact}`; link.textContent = 'Contato'; $('.footer-links').append(link);
 }
 
 const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 const files = Array.from({ length: 50 }, (_, index) => ({
-  name: `IMG_${1000 + index}.jpg`,
-  found: index < 48,
-  destination: index % 2 === 0 ? 'Backup no SSD' : 'Pasta de arquivos',
-  copyName: index === 0 ? 'praia.jpg' : index === 3 ? 'por-do-sol.jpg' : null,
+  name: `IMG_${1000 + index}.jpg`, baseFound: index < 48, found: index < 48,
+  destination: 'Backup no SSD', copyName: index === 0 ? 'praia.jpg' : index === 3 ? 'por-do-sol.jpg' : null,
 }));
-const state = { phase: 'idle', processed: 0, tick: 0, filter: 'all', timer: null };
-const $ = selector => document.querySelector(selector);
+const state = { phase: 'idle', processed: 0, tick: 0, filter: 'all', search: '', timer: null, source: false, destination: false };
 const startButton = $('#start-demo');
 const pauseButton = $('#pause-demo');
 const finishButton = $('#finish-demo');
-const list = $('#demo-files');
 const filterButtons = [...document.querySelectorAll('[data-filter]')];
 const announce = text => { $('#demo-announcement').textContent = text; };
+const checkedFiles = () => files.slice(0, state.processed);
+const foundCount = () => checkedFiles().filter(file => file.found).length;
 
 function renderFiles() {
   const complete = state.phase === 'done';
-  const visible = files.filter(file => state.filter === 'all' || (state.filter === 'found' ? file.found : !file.found));
-  list.innerHTML = visible.map(file => {
+  const visible = files.filter(file => (state.filter === 'all' || (state.filter === 'found' ? file.found : !file.found)) && file.name.toLowerCase().includes(state.search));
+  $('#demo-files').innerHTML = visible.map(file => {
     const checked = complete || files.indexOf(file) < state.processed;
     const status = checked ? (file.found ? 'found' : 'missing') : 'awaiting';
     const label = checked ? (file.found ? 'Cópia encontrada' : 'Sem cópia encontrada') : 'Aguardando conferência';
     const icon = checked ? `<svg class="icon" aria-hidden="true"><use href="#i-${file.found ? 'check' : 'warning'}"/></svg>` : '';
     return `<tr class="${status === 'missing' ? 'is-missing' : ''}"><td><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>${file.name}${checked && file.copyName ? `<small>Cópia: ${file.copyName}</small>` : ''}</td><td>${checked ? (file.found ? file.destination : 'Nenhum dos destinos') : '—'}</td><td><span class="file-status ${status}">${icon}${label}</span></td></tr>`;
-  }).join('');
+  }).join('') || '<tr><td colspan="3" class="no-results">Nenhum arquivo corresponde à busca e ao filtro.</td></tr>';
   $('#visible-count').textContent = `${visible.length} arquivos`;
   filterButtons.forEach(button => {
     const filter = button.dataset.filter;
     button.setAttribute('aria-pressed', String(filter === state.filter));
     button.disabled = filter !== 'all' && !complete;
-    button.querySelector('span').textContent = filter === 'all' ? '50' : filter === 'found' ? String(Math.min(state.processed, 48)) : String(Math.max(state.processed - 48, 0));
+    button.querySelector('span').textContent = filter === 'all' ? '50' : filter === 'found' ? String(foundCount()) : String(state.processed - foundCount());
   });
 }
 function updateProgress() {
@@ -78,116 +66,127 @@ function updateProgress() {
   $('#progress-count').textContent = `${state.processed} de 50`;
   $('#demo-source').classList.toggle('is-active', state.tick < 5 && state.phase === 'running');
   $('#demo-destinations').classList.toggle('is-active', state.tick >= 5 && state.tick < 10 && state.phase === 'running');
-  const phaseLabel = state.tick < 5 ? 'Conferindo a origem…' : state.tick < 10 ? 'Consultando os destinos…' : 'Comparando o conteúdo dos arquivos…';
-  $('#demo-phase').textContent = phaseLabel;
-  $('#progress-label').textContent = phaseLabel;
+  const label = state.tick < 5 ? 'Conferindo a origem…' : state.tick < 10 ? 'Consultando o destino…' : 'Comparando o conteúdo dos arquivos…';
+  $('#demo-phase').textContent = label; $('#progress-label').textContent = label;
 }
-function clearTimer() { window.clearInterval(state.timer); state.timer = null; }
+function clearTimer() { clearInterval(state.timer); state.timer = null; }
+function showResult() {
+  const found = files.filter(file => file.found).length;
+  const missing = 50 - found;
+  $('#demo-result').hidden = false;
+  $('#demo-result h3').textContent = `${found} de 50 arquivos têm cópia confirmada.`;
+  $('#demo-result p').textContent = missing ? `${missing} ${missing === 1 ? 'arquivo sem cópia encontrada' : 'arquivos sem cópia encontrada'} nos destinos escolhidos.` : 'Nova comparação completa, incluindo o destino das novas cópias.';
+  $('.result-count').innerHTML = `${found}<span>/50</span>`;
+  $('.copy-next-step').hidden = missing === 0;
+  copyDemo.enable(true);
+}
 function finish() {
-  clearTimer();
-  state.phase = 'done'; state.processed = 50; state.tick = 60;
-  updateProgress(); renderFiles();
+  clearTimer(); state.phase = 'done'; state.processed = 50; state.tick = 60;
+  updateProgress(); renderFiles(); showResult();
   startButton.disabled = false;
   startButton.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg>Repetir demonstração';
   if (document.activeElement === pauseButton || document.activeElement === finishButton) startButton.focus({ preventScroll: true });
   pauseButton.hidden = true; finishButton.hidden = true;
-  $('#demo-result').hidden = false;
-  $('#demo-phase').textContent = 'Conferência concluída.';
-  $('#progress-label').textContent = 'Conteúdo conferido';
+  $('#demo-phase').textContent = 'Conferência concluída.'; $('#progress-label').textContent = 'Conteúdo conferido';
   $('#demo-status').textContent = '50 arquivos verificados · 2 precisam de atenção';
-  announce('Conferência concluída. 48 de 50 arquivos têm cópia confirmada. IMG_1048.jpg e IMG_1049.jpg estão sem cópia encontrada. Os filtros estão disponíveis.');
+  announce('48 de 50 arquivos têm cópia confirmada. IMG_1048.jpg e IMG_1049.jpg estão sem cópia encontrada. Você pode selecionar os faltantes para copiar.');
 }
 function tick() {
-  state.tick += 1;
-  state.processed = Math.max(0, Math.min(50, state.tick - 10));
+  state.tick += 1; state.processed = Math.max(0, Math.min(50, state.tick - 10));
   if (state.processed === 50) { finish(); return; }
   updateProgress(); renderFiles();
 }
 function start() {
-  clearTimer();
-  Object.assign(state, { phase: 'running', processed: 0, tick: 0, filter: 'all' });
-  $('.file-table-scroll').scrollTop = 0;
-  $('#demo-result').hidden = true;
-  $('.demo-progress-wrap').hidden = false;
+  if (!state.source || !state.destination) return;
+  clearTimer(); copyDemo.reset();
+  files.forEach(file => { file.found = file.baseFound; file.destination = 'Backup no SSD'; if (!file.baseFound) file.copyName = null; });
+  Object.assign(state, { phase: 'running', processed: 0, tick: 0, filter: 'all', search: '' });
+  $('#demo-search').value = ''; $('#additional-destination').hidden = true; $('.file-table-scroll').scrollTop = 0;
+  $('#demo-result').hidden = true; $('.copy-next-step').hidden = true; $('.demo-progress-wrap').hidden = false;
   startButton.disabled = true;
   startButton.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Conferindo cópias…';
-  pauseButton.hidden = false; pauseButton.textContent = 'Pausar';
-  finishButton.hidden = false;
+  pauseButton.hidden = false; pauseButton.textContent = 'Pausar'; finishButton.hidden = false;
   $('#demo-status').textContent = 'Conferência de conteúdo em andamento';
   updateProgress(); renderFiles();
-  announce('Demonstração iniciada. Conferindo 50 arquivos fictícios. Você pode pausar ou ver o resultado agora.');
+  announce('Conferindo 50 arquivos fictícios. Você pode pausar ou ver o resultado agora.');
   if (motionPreference.matches) { finish(); return; }
-  state.timer = window.setInterval(tick, 120);
+  pauseButton.focus({ preventScroll: true }); state.timer = setInterval(tick, 120);
 }
-startButton.addEventListener('click', start);
-finishButton.addEventListener('click', finish);
+for (const [id, field, label] of [['choose-source', 'source', 'Origem escolhida'], ['choose-destination', 'destination', 'Destino escolhido']]) {
+  $(`#${id}`).addEventListener('click', event => {
+    state[field] = true; event.currentTarget.setAttribute('aria-pressed', 'true'); event.currentTarget.textContent = label;
+    startButton.disabled = !state.source || !state.destination;
+    $('#demo-phase').textContent = startButton.disabled ? 'Escolha também o outro item fictício.' : 'Tudo pronto para conferir.';
+  });
+}
+startButton.addEventListener('click', start); finishButton.addEventListener('click', finish);
 pauseButton.addEventListener('click', () => {
   if (state.phase === 'running') {
     clearTimer(); state.phase = 'paused'; pauseButton.textContent = 'Continuar';
-    $('#demo-phase').textContent = 'Demonstração pausada.';
-    $('#progress-label').textContent = 'Conferência pausada';
-    $('#demo-status').textContent = 'Pausada · nada foi alterado';
-    announce('Demonstração pausada.');
+    $('#demo-phase').textContent = 'Demonstração pausada.'; $('#progress-label').textContent = 'Conferência pausada';
+    $('#demo-status').textContent = 'Pausada · nada foi alterado'; announce('Demonstração pausada.');
   } else if (state.phase === 'paused') {
-    state.phase = 'running'; pauseButton.textContent = 'Pausar';
-    $('#demo-status').textContent = 'Conferência de conteúdo em andamento';
-    updateProgress(); state.timer = window.setInterval(tick, 120);
-    announce('Demonstração retomada.');
+    state.phase = 'running'; pauseButton.textContent = 'Pausar'; $('#demo-status').textContent = 'Conferência de conteúdo em andamento';
+    updateProgress(); state.timer = setInterval(tick, 120); announce('Demonstração retomada.');
   }
 });
 filterButtons.forEach(button => button.addEventListener('click', () => {
   state.filter = button.dataset.filter; renderFiles(); $('.file-table-scroll').scrollTop = 0;
-  const count = state.filter === 'all' ? 50 : state.filter === 'found' ? 48 : 2;
-  announce(`Filtro ${button.textContent.trim()}. ${count} arquivos na lista.`);
+  announce(`Filtro ${button.textContent.trim()}. ${$('#visible-count').textContent} na lista.`);
 }));
+$('#demo-search').addEventListener('input', event => { state.search = event.target.value.trim().toLowerCase(); renderFiles(); });
 motionPreference.addEventListener('change', event => { if (event.matches && ['running', 'paused'].includes(state.phase)) finish(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.phase === 'running') pauseButton.click(); });
-renderFiles();
 
-// The full simulation is opened on demand, keeping the main page short.
 const demoDialog = $('#demo-dialog');
-const copyDemo = initCopyDemo({ dialog: demoDialog, motionPreference, pauseCheck: () => { if (state.phase === 'running') pauseButton.click(); } });
-document.querySelectorAll('a[href="#demonstracao"]').forEach(link => {
-  link.addEventListener('click', event => {
-    event.preventDefault();
-    demoDialog.showModal();
-    copyDemo.selectMode('check');
-    document.body.classList.add('dialog-open');
-    startButton.focus({ preventScroll: true });
-  });
+const copyDemo = initCopyDemo({ dialog: demoDialog, motionPreference,
+  pauseCheck: () => { if (state.phase === 'running') pauseButton.click(); },
+  onReset: () => {
+    files.forEach(file => { file.found = file.baseFound; file.destination = 'Backup no SSD'; if (!file.baseFound) file.copyName = null; });
+    state.phase = 'done'; state.processed = 50; state.filter = 'all'; state.search = '';
+    $('#demo-search').value = ''; $('#additional-destination').hidden = true;
+    renderFiles(); showResult(); $('#demo-status').textContent = 'Conferência inicial · 2 arquivos sem cópia';
+  },
+  onCompared: confirmedFiles => {
+    confirmedFiles.forEach(copied => {
+      const file = files.find(item => item.name === copied.name);
+      if (file) { file.found = true; file.destination = copied.destination; file.copyName = copied.copyName; }
+    });
+    state.phase = 'done'; state.processed = 50;
+    state.filter = 'all'; state.search = ''; $('#demo-search').value = '';
+    $('#additional-destination').textContent = [...new Set(confirmedFiles.map(file => file.destination))].join(' + ');
+    $('#additional-destination').hidden = false;
+    renderFiles(); showResult();
+    $('#demo-status').textContent = 'Nova comparação concluída · novo destino incluído';
+    $('#demo-phase').textContent = 'Comparação atualizada depois da cópia.';
+  },
 });
+renderFiles();
+for (const link of document.querySelectorAll('[data-open-demo]')) {
+  link.addEventListener('click', event => {
+    event.preventDefault(); demoDialog.showModal(); copyDemo.selectMode('check'); document.body.classList.add('dialog-open');
+    (state.source && state.destination ? startButton : $('#choose-source')).focus({ preventScroll: true });
+  });
+}
 $('.dialog-close').addEventListener('click', () => demoDialog.close());
 demoDialog.addEventListener('click', event => { if (event.target === demoDialog) demoDialog.close(); });
-demoDialog.addEventListener('close', () => {
-  document.body.classList.remove('dialog-open');
-  if (state.phase === 'running') pauseButton.click();
-  copyDemo.pause();
-});
-if (location.hash === '#demonstracao') {
-  demoDialog.showModal(); document.body.classList.add('dialog-open');
-}
+demoDialog.addEventListener('close', () => { document.body.classList.remove('dialog-open'); if (state.phase === 'running') pauseButton.click(); copyDemo.pause(); });
+if (location.hash === '#demonstracao') { demoDialog.showModal(); document.body.classList.add('dialog-open'); }
 
-// Native details remain usable without JavaScript; animate both directions when allowed.
-document.querySelectorAll('.faq-list details, .feature-detail, .compact-privacy details').forEach(details => {
-  let animation;
-  let targetOpen = details.open;
+// Preserve native disclosure behavior and animate briefly in both directions.
+document.querySelectorAll('.faq-list details, .feature-detail, .compact-privacy details, .upcoming-details').forEach(details => {
+  let animation; let targetOpen = details.open;
   details.querySelector('summary').addEventListener('click', event => {
     if (motionPreference.matches || !details.animate) return;
-    event.preventDefault();
-    const startHeight = details.getBoundingClientRect().height;
-    animation?.cancel();
-    targetOpen = !targetOpen;
-    details.open = true;
+    event.preventDefault(); const height = details.getBoundingClientRect().height; animation?.cancel(); targetOpen = !targetOpen; details.open = true;
     const endHeight = targetOpen ? details.scrollHeight : details.querySelector('summary').getBoundingClientRect().height;
     details.style.overflow = 'hidden';
-    animation = details.animate({ height: [`${startHeight}px`, `${endHeight}px`] }, { duration: 180, easing: 'ease-out' });
+    animation = details.animate({ height: [`${height}px`, `${endHeight}px`] }, { duration: 180, easing: 'ease-out' });
     animation.onfinish = () => { details.open = targetOpen; details.style.overflow = ''; animation = null; };
   });
   details.addEventListener('toggle', () => { if (!animation) targetOpen = details.open; });
 });
 if ('IntersectionObserver' in window && !motionPreference.matches) {
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } });
-  }, { threshold: 0.12 });
+  const observer = new IntersectionObserver(entries => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.12 });
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 }

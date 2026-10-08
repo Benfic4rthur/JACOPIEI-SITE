@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "start": "node scripts/serve.mjs",
-    "check": "node --check dist/app.js && node --check dist/config.js && node --check dist/copy-demo.js",
+    "check": "node --check dist/app.js && node --check dist/config.js && node --check dist/copy-demo.js && node --check dist/release.js",
     "test": "playwright test"
   },
   "devDependencies": {
