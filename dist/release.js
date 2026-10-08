@@ -29,16 +29,16 @@ export async function loadReleaseMetadata() {
     document.querySelectorAll('[data-version]').forEach(el => { el.textContent = `v${data.version}`; });
     document.querySelectorAll('[data-download-cta]').forEach(el => {
       el.href = data.downloadUrl;
-      el.textContent = data.experimental ? 'Baixar versão experimental para macOS' : 'Baixar para macOS';
+      el.textContent = 'Baixar para macOS';
     });
     document.querySelectorAll('[data-release-notes]').forEach(el => { el.href = data.releaseNotesUrl; });
-    document.querySelectorAll('[data-launch-status]').forEach(el => { el.textContent = data.experimental ? 'Versão experimental disponível' : 'Disponível para macOS'; });
+    document.querySelectorAll('[data-launch-status]').forEach(el => { el.textContent = 'Disponível para macOS'; });
     const architectures = data.architectures.map(value => value === 'arm64' ? 'Apple Silicon' : 'Intel').join(' e ');
     const minimum = data.minimumMacOSVersion.replace(/\.0$/, '');
     document.querySelectorAll('[data-compatibility]').forEach(el => { el.textContent = `macOS ${minimum} ou superior · ${architectures}`; });
     const details = [];
     if (data.codeSigning === 'ad-hoc-not-notarized') details.push('Assinatura local, sem notarização da Apple. O macOS pode bloquear o instalador baixado.');
-    else if (data.experimental) details.push('Distribuição experimental. Consulte as notas da versão antes de instalar.');
+    else if (data.codeSigning !== 'developer-id-notarized') details.push('Consulte as notas da versão para detalhes de instalação.');
     if (!data.automaticUpdatesAvailable) details.push('Atualização automática desativada.');
     document.querySelectorAll('[data-distribution-warning]').forEach(el => { el.textContent = details.join(' '); el.hidden = !details.length; });
     document.querySelectorAll('[data-metadata-status]').forEach(el => {
@@ -48,7 +48,7 @@ export async function loadReleaseMetadata() {
     document.documentElement.dataset.releaseState = 'ready';
     return data;
   } catch {
-    document.querySelectorAll('[data-download-cta]').forEach(el => { el.href = product.release.releasesUrl; el.textContent = 'Ver downloads experimentais'; });
+    document.querySelectorAll('[data-download-cta]').forEach(el => { el.href = product.release.releasesUrl; el.textContent = 'Ver downloads'; });
     document.querySelectorAll('[data-metadata-status]').forEach(el => { el.textContent = 'Não foi possível consultar a versão. Abra a página de releases para baixar.'; });
     document.documentElement.dataset.releaseState = 'fallback';
     return null;

@@ -126,7 +126,7 @@ test('interromper nova comparação conserva cópias e repete somente a leitura'
 test('metadados oficiais configuram DMG, versão, compatibilidade e aviso', async ({ page }) => {
   await page.goto('/'); await expect(page.locator('html')).toHaveAttribute('data-release-state', 'ready');
   for (const link of await page.locator('[data-download-cta]').all()) {
-    await expect(link).toHaveText('Baixar versão experimental para macOS'); await expect(link).toHaveAttribute('href', metadata.downloadUrl);
+    await expect(link).toHaveText('Baixar para macOS'); await expect(link).toHaveAttribute('href', metadata.downloadUrl);
   }
   await expect(page.locator('[data-release-notes]')).toHaveAttribute('href', metadata.releaseNotesUrl);
   await expect(page.locator('[data-compatibility]').first()).toHaveText('macOS 14 ou superior · Apple Silicon e Intel');
@@ -156,8 +156,8 @@ test('FAQ, recursos e navegação preservam limites atuais e preço planejado', 
   expect(missing).toEqual([]);
   await expect(page.locator('input[type="file"], input[type="email"], form')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Assinar agora' })).toHaveCount(0);
-  await expect(page.locator('[data-price-note]')).toHaveText('Preço planejado para o lançamento comercial.');
-  const stale = await page.locator('body').textContent(); expect(stale).not.toMatch(/0\.2\.0|Em desenvolvimento para a versão 0\.3|Lançamento em preparação/);
+  await expect(page.locator('[data-price-note]')).toHaveText('Preço previsto para o lançamento comercial.');
+  const stale = await page.locator('body').textContent(); expect(stale).not.toMatch(/0\.2\.0|Em desenvolvimento para a versão 0\.3|Lançamento em preparação|experimental|produto inacabado|serviço de licenças ainda não foi implementado/i);
   await page.locator('.desktop-nav a[href="#preco"]').click(); await expect(page).toHaveURL(/#preco$/);
 });
 

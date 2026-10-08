@@ -18,7 +18,7 @@ mobileNav.addEventListener('click', event => {
 });
 const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: product.price.currency }).format(product.price.amount);
 document.querySelectorAll('[data-price]').forEach(el => { el.textContent = price; });
-$('[data-faq-subscription]').textContent = `${price} por ${product.price.interval} é o preço planejado, não uma assinatura disponível hoje. Pagamentos, ativação, liberação de licenças e compra dentro do aplicativo ainda não estão disponíveis. A intenção futura é vender pelo app; o site apresenta o produto e distribui o instalador.`;
+$('[data-faq-subscription]').textContent = `${price} por ${product.price.interval} é o preço previsto para o lançamento comercial. A contratação pelo aplicativo não está disponível. Você pode baixar o instalador pelo site.`;
 function safeHttps(value) { try { const url = new URL(value); return url.protocol === 'https:' ? url.href : null; } catch { return null; } }
 for (const [key, label] of Object.entries({ product: 'Informações do produto', privacy: 'Política de privacidade', terms: 'Termos de uso' })) {
   const href = safeHttps(product.links[key]);

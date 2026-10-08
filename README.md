@@ -49,7 +49,7 @@ npm run check
 npm test
 ```
 
-Testes cobrem o fluxo completo 48/50→50/50, seleção parcial, comparação após gravação, pause/cancelamento/retry, busca/filtros, avisos do mesmo volume, manifesto/fallback, teclado, FAQ, divulgação experimental, responsividade e WCAG A/AA com axe. Capturas de revisão são geradas em `test-results/` e não são versionadas. Não existe workflow de GitHub Actions.
+Testes cobrem o fluxo completo 48/50→50/50, seleção parcial, comparação após gravação, pause/cancelamento/retry, busca/filtros, avisos do mesmo volume, manifesto/fallback, teclado, FAQ, avisos de instalação, responsividade e WCAG A/AA com axe. Capturas de revisão são geradas em `test-results/` e não são versionadas. Não existe workflow de GitHub Actions.
 
 ## Assets e hospedagem
 
