@@ -39,9 +39,28 @@ menuToggle.addEventListener('click', () => {
 mobileNav.addEventListener('click', event => {
   if (event.target.closest('a')) { mobileNav.hidden = true; menuToggle.setAttribute('aria-expanded', 'false'); menuToggle.setAttribute('aria-label', 'Abrir menu'); }
 });
-const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: product.price.currency }).format(product.price.amount);
-document.querySelectorAll('[data-price]').forEach(el => { el.textContent = price; });
-$('[data-faq-subscription]').textContent = `${price} por ${product.price.interval} é o plano apresentado na área de licença do aplicativo. O pagamento e a ativação paga estão em preparação. A contratação fica dentro do app; o site não recebe pagamentos.`;
+function showPrice(amount, currency = 'BRL') {
+  const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(amount);
+  document.querySelectorAll('[data-price]').forEach(el => { el.textContent = price; });
+  $('[data-faq-subscription]').textContent = `${price} por ${product.price.interval} é o plano apresentado na área de licença do aplicativo. O pagamento e a ativação paga estão em preparação. A contratação fica dentro do app; o site não recebe pagamentos.`;
+}
+showPrice(product.price.amount, product.price.currency);
+async function refreshPublicPrice() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
+  try {
+    const response = await fetch(`${product.licensingApiUrl}/v1/plans/current`, { signal: controller.signal, cache: 'no-store' });
+    if (!response.ok) return;
+    const plan = await response.json();
+    if (plan.currency !== 'BRL' || !Number.isSafeInteger(plan.amountCents) || plan.amountCents < 100) return;
+    showPrice(plan.amountCents / 100, plan.currency);
+  } catch {
+    // Keep the known plan value when the license service is temporarily unavailable.
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+void refreshPublicPrice();
 function safeHttps(value) { try { const url = new URL(value); return url.protocol === 'https:' ? url.href : null; } catch { return null; } }
 for (const [key, label] of Object.entries({ product: 'Informações do produto', privacy: 'Política de privacidade', terms: 'Termos de uso' })) {
   const href = safeHttps(product.links[key]);

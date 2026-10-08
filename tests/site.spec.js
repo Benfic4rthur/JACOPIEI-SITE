@@ -179,6 +179,14 @@ test('trial, vencimento e licença são coerentes depois da inicialização Java
   await expect(page.getByRole('button', { name: 'Começar meus 7 dias grátis' })).toHaveCount(0);
 });
 
+test('preço público acompanha o plano vigente no servidor de licenças', async ({ page }) => {
+  await page.route('https://jacopiei-license-server.vercel.app/v1/plans/current', route =>
+    route.fulfill({ json: { amountCents: 3490, currency: 'BRL' } }));
+  await page.goto('/');
+  await expect(page.locator('[data-price]')).toHaveText('R$ 34,90');
+  await expect(page.locator('[data-faq-subscription]')).toContainText('R$ 34,90 por mês');
+});
+
 test('outro lançamento muda versão, requisitos e distribuição sem alterar conteúdo do trial', async ({ page }) => {
   const next = { ...metadata, version: '8.1.2', minimumMacOSVersion: '15.0', architectures: ['arm64'], downloadUrl: `${releases}/download/v8.1.2/JaCopiei-universal.dmg`, releaseNotesUrl: `${releases}/tag/v8.1.2`, channel: 'stable', codeSigning: 'developer-id-notarized', automaticUpdatesAvailable: true };
   await page.unroute(metadataUrl); await page.route(metadataUrl, route => route.fulfill({ json: next }));

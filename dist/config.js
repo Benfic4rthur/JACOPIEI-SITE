@@ -2,6 +2,7 @@
 export const product = Object.freeze({
   name: 'JáCopiei?',
   price: { amount: 29.99, currency: 'BRL', interval: 'mês' },
+  licensingApiUrl: 'https://jacopiei-license-server.vercel.app',
   release: {
     metadataUrl: 'https://raw.githubusercontent.com/Benfic4rthur/JaCopiei-Releases/main/latest.json',
     releasesUrl: 'https://github.com/Benfic4rthur/JaCopiei-Releases/releases',
