@@ -19,14 +19,30 @@ export function validateRelease(data) {
   };
 }
 
+function showNeutralRelease(message) {
+  document.querySelectorAll('[data-version]').forEach(el => { el.textContent = ''; el.hidden = true; });
+  document.querySelectorAll('[data-version-divider]').forEach(el => { el.hidden = true; });
+  document.querySelectorAll('[data-download-cta]').forEach(el => { el.href = product.release.releasesUrl; el.textContent = 'Ver downloads'; });
+  document.querySelectorAll('[data-release-notes]').forEach(el => { el.href = product.release.releasesUrl; });
+  document.querySelectorAll('[data-launch-status]').forEach(el => { el.textContent = 'Downloads no GitHub'; });
+  document.querySelectorAll('[data-compatibility]').forEach(el => { el.textContent = 'Consulte a compatibilidade nas notas da versão.'; });
+  document.querySelectorAll('[data-distribution-warning], [data-installation-info]').forEach(el => {
+    el.textContent = 'Consulte as notas da versão para orientações de instalação e atualização.'; el.hidden = false;
+  });
+  document.querySelectorAll('[data-metadata-status]').forEach(el => { el.textContent = message; });
+}
+
 export async function loadReleaseMetadata() {
+  showNeutralRelease('Consultando a versão disponível no GitHub…');
+  document.documentElement.dataset.releaseState = 'loading';
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4500);
   try {
     const response = await fetch(product.release.metadataUrl, { signal: controller.signal, cache: 'no-cache' });
     if (!response.ok) throw new Error('Release metadata unavailable');
     const data = validateRelease(await response.json());
-    document.querySelectorAll('[data-version]').forEach(el => { el.textContent = `v${data.version}`; });
+    document.querySelectorAll('[data-version]').forEach(el => { el.textContent = `v${data.version}`; el.hidden = false; });
+    document.querySelectorAll('[data-version-divider]').forEach(el => { el.hidden = false; });
     document.querySelectorAll('[data-download-cta]').forEach(el => {
       el.href = data.downloadUrl;
       el.textContent = 'Baixar para macOS';
@@ -41,6 +57,9 @@ export async function loadReleaseMetadata() {
     else if (data.codeSigning !== 'developer-id-notarized') details.push('Consulte as notas da versão para detalhes de instalação.');
     if (!data.automaticUpdatesAvailable) details.push('Atualização automática desativada.');
     document.querySelectorAll('[data-distribution-warning]').forEach(el => { el.textContent = details.join(' '); el.hidden = !details.length; });
+    document.querySelectorAll('[data-installation-info]').forEach(el => {
+      el.textContent = details.length ? details.join(' ') : 'Baixe o instalador pelo site. Consulte as notas da versão para orientações de instalação e atualização.';
+    });
     document.querySelectorAll('[data-metadata-status]').forEach(el => {
       const size = Number.isFinite(data.sizeBytes) ? ` · DMG ${(data.sizeBytes / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB` : '';
       el.textContent = `v${data.version}${size}`;
@@ -48,8 +67,7 @@ export async function loadReleaseMetadata() {
     document.documentElement.dataset.releaseState = 'ready';
     return data;
   } catch {
-    document.querySelectorAll('[data-download-cta]').forEach(el => { el.href = product.release.releasesUrl; el.textContent = 'Ver downloads'; });
-    document.querySelectorAll('[data-metadata-status]').forEach(el => { el.textContent = 'Não foi possível consultar a versão. Abra a página de releases para baixar.'; });
+    showNeutralRelease('Não foi possível consultar a versão. Abra a página de releases para baixar.');
     document.documentElement.dataset.releaseState = 'fallback';
     return null;
   } finally { clearTimeout(timeout); }

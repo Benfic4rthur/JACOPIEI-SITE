@@ -4,8 +4,8 @@ import AxeBuilder from '@axe-core/playwright';
 const metadataUrl = 'https://raw.githubusercontent.com/Benfic4rthur/JaCopiei-Releases/main/latest.json';
 const releases = 'https://github.com/Benfic4rthur/JaCopiei-Releases/releases';
 const metadata = {
-  version: '0.3.0', build: '6', minimumMacOSVersion: '14.0', architectures: ['arm64', 'x86_64'],
-  downloadUrl: `${releases}/download/v0.3.0/JaCopiei-0.3.0-universal.dmg`, releaseNotesUrl: `${releases}/tag/v0.3.0`,
+  version: '7.8.9', build: '6', minimumMacOSVersion: '14.0', architectures: ['arm64', 'x86_64'],
+  downloadUrl: `${releases}/download/v7.8.9/JaCopiei-7.8.9-universal.dmg`, releaseNotesUrl: `${releases}/tag/v7.8.9`,
   sha256: '108c618ed963449d17f9e8ff3fc86a243119af6dae11810f10ac402a9d72ce77', sizeBytes: 2973805,
   channel: 'preview', codeSigning: 'ad-hoc-not-notarized', automaticUpdatesAvailable: false,
 };
@@ -129,24 +129,97 @@ test('metadados oficiais configuram DMG, versão, compatibilidade e aviso', asyn
     await expect(link).toHaveText('Baixar para macOS'); await expect(link).toHaveAttribute('href', metadata.downloadUrl);
   }
   await expect(page.locator('[data-release-notes]')).toHaveAttribute('href', metadata.releaseNotesUrl);
+  for (const node of await page.locator('[data-version]').all()) { await expect(node).toHaveText('v7.8.9'); await expect(node).toBeVisible(); }
   await expect(page.locator('[data-compatibility]').first()).toHaveText('macOS 14 ou superior · Apple Silicon e Intel');
   await expect(page.locator('#hero-download-warning')).toContainText('sem notarização da Apple');
   await expect(page.locator('#download-warning')).toContainText('Atualização automática desativada');
-  await expect(page.locator('[data-metadata-status]')).toHaveText('v0.3.0 · DMG 3 MB');
+  await expect(page.locator('[data-metadata-status]')).toHaveText('v7.8.9 · DMG 3 MB');
 });
 
-for (const mode of ['network', 'invalid', 'source-archive']) {
+for (const mode of ['network', 'invalid', 'source-archive', 'foreign-repository']) {
   test(`fallback do download quando metadados falham: ${mode}`, async ({ page }) => {
     await page.unroute(metadataUrl);
-    await page.route(metadataUrl, route => mode === 'network' ? route.abort() : route.fulfill({ json: mode === 'invalid' ? { version: '0.3.0' } : { ...metadata, downloadUrl: `${releases}/download/v0.3.0/source.zip` } }));
+    await page.route(metadataUrl, route => mode === 'network' ? route.abort() : route.fulfill({ json: mode === 'invalid' ? { version: '7.8.9' } : { ...metadata, downloadUrl: mode === 'source-archive' ? `${releases}/download/v7.8.9/source.zip` : 'https://github.com/OtherOwner/OtherRepo/releases/download/v7.8.9/App.dmg' } }));
     await page.goto('/'); await expect(page.locator('html')).toHaveAttribute('data-release-state', 'fallback');
     for (const link of await page.locator('[data-download-cta]').all()) await expect(link).toHaveAttribute('href', releases);
     await expect(page.locator('[data-metadata-status]')).toContainText('Não foi possível consultar a versão');
+    for (const node of await page.locator('[data-version]').all()) { await expect(node).toHaveText(''); await expect(node).toBeHidden(); }
+    await expect(page.locator('[data-release-notes]')).toHaveAttribute('href', releases);
+    await expect(page.locator('#download-title')).not.toContainText('7.8.9');
+    await expect(page.locator('.trial-highlight')).toContainText('7 dias grátis');
+    await expect(page.locator('[data-faq-subscription]')).toContainText('área de licença');
     await initialResult(page); // Failure of remote metadata never blocks the local demonstration.
   });
 }
 
-test('FAQ, recursos e navegação preservam limites atuais e preço planejado', async ({ page }) => {
+test('trial, vencimento e licença são coerentes depois da inicialização JavaScript', async ({ page }) => {
+  await page.goto('/'); await expect(page.locator('html')).toHaveAttribute('data-release-state', 'ready');
+  const answer = async question => {
+    const details = page.locator('.faq-list details').filter({ has: page.getByText(question, { exact: true }) });
+    await details.locator('summary').click(); return details.locator('.faq-answer');
+  };
+  const start = await answer('Como começam os 7 dias grátis?');
+  await expect(start).toContainText('Começar meus 7 dias grátis');
+  await expect(start).toContainText('Instalar ou abrir o JáCopiei? não inicia o prazo');
+  await expect(start).toContainText('dias restantes e a data de vencimento');
+  await expect(start).toContainText('continua ao fechar e reabrir');
+  const card = await answer('Preciso cadastrar um cartão?');
+  await expect(card).toContainText('não exigem cartão e não geram cobrança automática');
+  const expired = await answer('O que acontece quando o teste termina?');
+  await expect(expired).toContainText('novas verificações, cópias e novas tentativas ficam bloqueadas');
+  await expect(expired).toContainText('não apaga arquivos nem interrompe uma cópia já iniciada');
+  await expect(await answer('Ainda posso consultar meus relatórios?')).toContainText('histórico, os detalhes e a exportação dos relatórios continuam disponíveis depois do vencimento');
+  const license = await answer('Posso acessar a área de licença antes de começar o teste?');
+  await expect(license).toContainText('antes de iniciar os 7 dias grátis, durante o período e depois do vencimento');
+  await expect(license).toContainText('R$ 29,99 por mês');
+  await answer('Como funcionam o plano e a contratação?');
+  await expect(page.locator('[data-faq-subscription]')).toContainText('R$ 29,99 por mês é o plano apresentado na área de licença');
+  await expect(page.locator('[data-faq-subscription]')).toContainText('pagamento e a ativação paga estão em preparação');
+  await expect(page.locator('[data-subscription-note]')).toContainText('A contratação fica dentro do aplicativo');
+  await expect(page.getByRole('button', { name: 'Começar meus 7 dias grátis' })).toHaveCount(0);
+});
+
+test('outro lançamento muda versão, requisitos e distribuição sem alterar conteúdo do trial', async ({ page }) => {
+  const next = { ...metadata, version: '8.1.2', minimumMacOSVersion: '15.0', architectures: ['arm64'], downloadUrl: `${releases}/download/v8.1.2/JaCopiei-universal.dmg`, releaseNotesUrl: `${releases}/tag/v8.1.2`, channel: 'stable', codeSigning: 'developer-id-notarized', automaticUpdatesAvailable: true };
+  await page.unroute(metadataUrl); await page.route(metadataUrl, route => route.fulfill({ json: next }));
+  await page.goto('/'); await expect(page.locator('html')).toHaveAttribute('data-release-state', 'ready');
+  for (const node of await page.locator('[data-version]').all()) await expect(node).toHaveText('v8.1.2');
+  await expect(page.locator('[data-download-cta]').first()).toHaveAttribute('href', next.downloadUrl);
+  await expect(page.locator('[data-release-notes]')).toHaveAttribute('href', next.releaseNotesUrl);
+  for (const node of await page.locator('[data-compatibility]').all()) await expect(node).toHaveText('macOS 15 ou superior · Apple Silicon');
+  for (const node of await page.locator('[data-distribution-warning]').all()) await expect(node).toBeHidden();
+  await page.getByText('O que preciso saber antes de instalar?', { exact: true }).click();
+  await expect(page.locator('[data-installation-info]')).toBeVisible();
+  await expect(page.locator('[data-installation-info]')).toContainText('Consulte as notas da versão');
+  await expect(page.locator('.trial-highlight')).toContainText('7 dias grátis');
+});
+
+test('uma consulta que falha depois de sucesso limpa os dados antigos de distribuição', async ({ page }) => {
+  await page.goto('/'); await expect(page.locator('html')).toHaveAttribute('data-release-state', 'ready');
+  await page.unroute(metadataUrl); await page.route(metadataUrl, route => route.abort());
+  await page.evaluate(async () => { const { loadReleaseMetadata } = await import('/release.js'); await loadReleaseMetadata(); });
+  await expect(page.locator('html')).toHaveAttribute('data-release-state', 'fallback');
+  for (const node of await page.locator('[data-version]').all()) { await expect(node).toHaveText(''); await expect(node).toBeHidden(); }
+  await expect(page.locator('[data-release-notes]')).toHaveAttribute('href', releases);
+  await expect(page.locator('[data-compatibility]').first()).toHaveText('Consulte a compatibilidade nas notas da versão.');
+  await expect(page.locator('#download-warning')).not.toContainText('notarização');
+});
+
+test('sem JavaScript não há versão fixa e o download oficial e o trial continuam descritos', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage(); await page.goto('http://127.0.0.1:4173/');
+    for (const node of await page.locator('[data-version]').all()) { await expect(node).toHaveText(''); await expect(node).toBeHidden(); }
+    for (const link of await page.locator('[data-download-cta], [data-release-notes]').all()) await expect(link).toHaveAttribute('href', releases);
+    await expect(page.locator('.trial-highlight')).toContainText('7 dias grátis');
+    await expect(page.locator('[data-faq-subscription]')).toContainText('pagamento e a ativação paga estão em preparação');
+    expect(await page.locator('body').textContent()).not.toMatch(/v?\d+\.\d+\.\d+/);
+    await page.getByText('Como começam os 7 dias grátis?', { exact: true }).click();
+    await expect(page.getByText('Instalar ou abrir o JáCopiei? não inicia o prazo.', { exact: false })).toBeVisible();
+  } finally { await context.close(); }
+});
+
+test('FAQ, recursos e navegação preservam limites atuais e preço do plano', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' }); await page.goto('/');
   for (const details of await page.locator('.faq-list details, .feature-detail, .upcoming-details').all()) {
     await details.locator('summary').click(); await expect(details).toHaveAttribute('open', '');
@@ -156,7 +229,7 @@ test('FAQ, recursos e navegação preservam limites atuais e preço planejado', 
   expect(missing).toEqual([]);
   await expect(page.locator('input[type="file"], input[type="email"], form')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Assinar agora' })).toHaveCount(0);
-  await expect(page.locator('[data-price-note]')).toHaveText('Preço previsto para o lançamento comercial.');
+  await expect(page.locator('[data-price-note]')).toHaveText('Plano apresentado na área de licença do aplicativo.');
   const stale = await page.locator('body').textContent(); expect(stale).not.toMatch(/0\.2\.0|Em desenvolvimento para a versão 0\.3|Lançamento em preparação|experimental|produto inacabado|serviço de licenças ainda não foi implementado/i);
   await page.locator('.desktop-nav a[href="#preco"]').click(); await expect(page).toHaveURL(/#preco$/);
 });

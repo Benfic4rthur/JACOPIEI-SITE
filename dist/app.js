@@ -3,7 +3,6 @@ import { loadReleaseMetadata } from './release.js';
 import { initCopyDemo } from './copy-demo.js';
 
 const $ = selector => document.querySelector(selector);
-document.querySelectorAll('[data-version]').forEach(el => { el.textContent = `v${product.version}`; });
 void loadReleaseMetadata();
 
 // A light deterrent, not source protection: browser menus can still open DevTools.
@@ -42,7 +41,7 @@ mobileNav.addEventListener('click', event => {
 });
 const price = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: product.price.currency }).format(product.price.amount);
 document.querySelectorAll('[data-price]').forEach(el => { el.textContent = price; });
-$('[data-faq-subscription]').textContent = `${price} por ${product.price.interval} é o preço previsto para o lançamento comercial. A contratação pelo aplicativo não está disponível. Você pode baixar o instalador pelo site.`;
+$('[data-faq-subscription]').textContent = `${price} por ${product.price.interval} é o plano apresentado na área de licença do aplicativo. O pagamento e a ativação paga estão em preparação. A contratação fica dentro do app; o site não recebe pagamentos.`;
 function safeHttps(value) { try { const url = new URL(value); return url.protocol === 'https:' ? url.href : null; } catch { return null; } }
 for (const [key, label] of Object.entries({ product: 'Informações do produto', privacy: 'Política de privacidade', terms: 'Termos de uso' })) {
   const href = safeHttps(product.links[key]);

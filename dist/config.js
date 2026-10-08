@@ -1,7 +1,6 @@
 // Dados ainda não definidos ficam nulos: nunca exibir links fictícios.
 export const product = Object.freeze({
   name: 'JáCopiei?',
-  version: '0.3.0',
   price: { amount: 29.99, currency: 'BRL', interval: 'mês' },
   release: {
     metadataUrl: 'https://raw.githubusercontent.com/Benfic4rthur/JaCopiei-Releases/main/latest.json',
