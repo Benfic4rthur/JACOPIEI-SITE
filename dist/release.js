@@ -28,10 +28,10 @@ export async function loadReleaseDownloads() {
   const timeout = setTimeout(() => controller.abort(), 6000);
   try {
     const total = await fetchAllReleaseDownloads(controller.signal);
-    status.textContent = `Downloads acumulados: ${total.toLocaleString('pt-BR')}`;
+    status.textContent = `Total de downloads: ${total.toLocaleString('pt-BR')}`;
     status.title = 'Instaladores DMG de todas as releases publicadas no GitHub';
   } catch {
-    status.textContent = 'Downloads acumulados indisponíveis no momento.';
+    status.textContent = 'Total de downloads indisponível no momento.';
     status.removeAttribute('title');
   } finally {
     clearTimeout(timeout);

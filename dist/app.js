@@ -1,5 +1,5 @@
 import { product } from './config.js';
-import { loadReleaseMetadata, loadReleaseDownloads } from './release.js';
+import { loadReleaseMetadata, loadReleaseDownloads } from './release.js?v=downloads-total';
 import { initCopyDemo } from './copy-demo.js';
 
 const $ = selector => document.querySelector(selector);

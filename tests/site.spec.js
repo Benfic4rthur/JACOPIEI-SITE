@@ -142,10 +142,10 @@ test('metadados oficiais configuram DMG, versão, compatibilidade e aviso', asyn
   await expect(page.locator('#hero-download-warning')).toContainText('sem notarização da Apple');
   await expect(page.locator('#download-warning')).toContainText('Atualização automática desativada');
   await expect(page.locator('[data-metadata-status]')).toHaveText('v7.8.9 · DMG 3 MB');
-  await expect(page.locator('[data-download-total]')).toHaveText('Downloads acumulados: 7');
+  await expect(page.locator('[data-download-total]')).toHaveText('Total de downloads: 7');
 });
 
-test('downloads acumulados incluem todas as páginas, mas só instaladores DMG', async ({ page }) => {
+test('total de downloads inclui todas as páginas, mas só instaladores DMG', async ({ page }) => {
   await page.unroute(releaseApi);
   await page.route(releaseApi, route => {
     const pageNumber = new URL(route.request().url()).searchParams.get('page');
@@ -155,7 +155,7 @@ test('downloads acumulados incluem todas as páginas, mas só instaladores DMG',
     return route.fulfill({ json });
   });
   await page.goto('/');
-  await expect(page.locator('[data-download-total]')).toHaveText('Downloads acumulados: 123');
+  await expect(page.locator('[data-download-total]')).toHaveText('Total de downloads: 123');
   await expect(page.locator('[data-download-cta]').first()).toHaveAttribute('href', metadata.downloadUrl);
 });
 
@@ -163,7 +163,7 @@ test('falha na contagem não impede baixar o instalador', async ({ page }) => {
   await page.unroute(releaseApi);
   await page.route(releaseApi, route => route.abort());
   await page.goto('/');
-  await expect(page.locator('[data-download-total]')).toHaveText('Downloads acumulados indisponíveis no momento.');
+  await expect(page.locator('[data-download-total]')).toHaveText('Total de downloads indisponível no momento.');
   await expect(page.locator('[data-download-cta]').first()).toHaveAttribute('href', metadata.downloadUrl);
 });
 
