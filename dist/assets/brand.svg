@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>JáCopiei? — pasta com documentos e cópia confirmada</title>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#347CE5"/><stop offset="1" stop-color="#0B3F98"/></linearGradient>
+    <linearGradient id="yellow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFE078"/><stop offset="1" stop-color="#F5C84C"/></linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="188" fill="url(#blue)"/>
+  <rect x="78" y="78" width="868" height="868" rx="174" fill="none" stroke="#FFFFFF" stroke-opacity=".15" stroke-width="4"/>
+  <path d="M226 322H409L468 375H776L812 411V680L776 716H226L190 680V358Z" fill="#D7A52E" stroke="#B0801D" stroke-width="8"/>
+  <rect x="362" y="210" width="252" height="365" rx="24" fill="#DBE9FF" stroke="#0B3F98" stroke-width="10"/>
+  <rect x="302" y="252" width="252" height="365" rx="24" fill="#F8FAFF" stroke="#0B3F98" stroke-width="10"/>
+  <path d="M352 318H502M352 364H502M352 410H450" fill="none" stroke="#8AA9D4" stroke-width="14" stroke-linecap="round"/>
+  <path d="M234 455H790Q823 455 818 488L784 714Q780 744 748 744H238Q206 744 202 714L174 494Q169 455 207 455Z" fill="url(#yellow)" stroke="#B0801D" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M220 478H784" stroke="#FFF4C8" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="765" cy="738" r="116" fill="#27915A" stroke="#F8FAFF" stroke-width="12"/>
+  <path d="M708 737L747 776L820 701" fill="none" stroke="#FFFFFF" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
