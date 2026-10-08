@@ -162,6 +162,7 @@ motionPreference.addEventListener('change', event => { if (event.matches && ['ru
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.phase === 'running') pauseButton.click(); });
 
 const demoDialog = $('#demo-dialog');
+let demoOpener = null;
 const copyDemo = initCopyDemo({ dialog: demoDialog, motionPreference,
   pauseCheck: () => { if (state.phase === 'running') pauseButton.click(); },
   onReset: () => {
@@ -187,13 +188,20 @@ const copyDemo = initCopyDemo({ dialog: demoDialog, motionPreference,
 renderFiles();
 for (const link of document.querySelectorAll('[data-open-demo]')) {
   link.addEventListener('click', event => {
+    demoOpener = link.closest('#mobile-nav') ? menuToggle : link;
     event.preventDefault(); demoDialog.showModal(); copyDemo.selectMode('check'); document.body.classList.add('dialog-open');
     (state.source && state.destination ? startButton : $('#choose-source')).focus({ preventScroll: true });
   });
 }
 $('.dialog-close').addEventListener('click', () => demoDialog.close());
 demoDialog.addEventListener('click', event => { if (event.target === demoDialog) demoDialog.close(); });
-demoDialog.addEventListener('close', () => { document.body.classList.remove('dialog-open'); if (state.phase === 'running') pauseButton.click(); copyDemo.pause(); });
+demoDialog.addEventListener('close', () => {
+  document.body.classList.remove('dialog-open');
+  if (state.phase === 'running') pauseButton.click();
+  copyDemo.pause();
+  const opener = demoOpener?.getClientRects().length ? demoOpener : (menuToggle.getClientRects().length ? menuToggle : $('.hero-actions [data-open-demo]'));
+  opener?.focus({ preventScroll: true });
+});
 if (location.hash === '#demonstracao') { demoDialog.showModal(); document.body.classList.add('dialog-open'); }
 
 // Preserve native disclosure behavior and animate briefly in both directions.

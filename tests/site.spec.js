@@ -269,4 +269,10 @@ test('teclado, tabs e fechamento da janela com movimento reduzido', async ({ pag
   const summary = page.locator('.faq-list summary').first(); await summary.focus(); await page.keyboard.press('Enter');
   await expect(page.locator('.faq-list details').first()).toHaveAttribute('open', ''); await page.keyboard.press('Enter');
   await expect(page.locator('.faq-list details').first()).not.toHaveAttribute('open', '');
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.getByRole('button', { name: 'Abrir menu' }).click();
+  await page.locator('#mobile-nav [data-open-demo]').click();
+  await expect(page.locator('#mobile-nav')).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Abrir menu' })).toBeFocused();
 });

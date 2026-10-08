@@ -24,3 +24,15 @@ button:focus-visible,a:focus-visible,summary:focus-visible,[tabindex]:focus-visi
 
 .trial-note{font-size:14px;line-height:1.65;color:var(--muted);margin:16px 0 20px}.trial-highlight{font-size:14px;font-weight:700;color:#216741;margin:12px 0 16px}
 @media(max-width:540px){.trial-note{font-size:13px;margin:14px 0 18px}}
+
+/* Make the demo discoverable and avoid needless outer scrolling on large screens. */
+.button-demo{border-color:#9c751e;background:linear-gradient(#fff1a9,#f5c84c 65%,#e7b83a);color:var(--ink);box-shadow:inset 1px 1px 0 #fff8d4,inset -1px -1px 0 #bd9126,0 2px 0 #142d5010}
+.button-demo .icon{width:19px;height:19px}
+.hero-actions>.button-demo{font-size:14px;padding:15px 18px}
+.header-cta.button-demo{gap:6px;padding-inline:14px}
+.roadmap>.button-demo{margin-left:auto;font-size:12px;padding:9px 12px;min-height:40px}
+#demo-dialog{padding-block:18px 8px}
+#demo-dialog .section-heading{margin-bottom:12px}
+.dialog-actions{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;height:0;pointer-events:none}
+.dialog-actions>.dialog-close{position:relative;right:auto;top:0;align-self:flex-start;pointer-events:auto}
+@media(max-width:540px){.hero-actions>.button-demo{width:100%;font-size:14px;padding:14px 13px}.roadmap>.button-demo{margin-left:0}#demo-dialog{padding-block:14px 11px}#demo-dialog .section-heading{margin-bottom:15px}}
